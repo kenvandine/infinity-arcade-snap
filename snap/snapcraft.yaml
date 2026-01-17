@@ -1,0 +1,125 @@
+name: infinity-arcade
+base: core24
+version: '0.3.0'
+summary: AI-powered game generator and arcade using Lemonade Server
+description: |
+  Infinity Arcade is an AI-powered game generator that combines a ChatGPT-like
+  interface with a game runtime to generate and play retro-style games using
+  large language models via Lemonade Server.
+
+  Features:
+  - Generate unique games by describing what you want to play
+  - Play classic-style arcade games rendered with Pygame
+  - Built-in demo games to get started
+  - Powered by AMD's Lemonade Server for local AI inference
+
+grade: stable
+confinement: strict
+compression: lzo
+
+platforms:
+  amd64:
+
+apps:
+  infinity-arcade:
+    command: bin/infinity-arcade-launcher
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+      - audio-playback
+      - browser-support
+    environment:
+      PYTHONPATH: $SNAP/lib/python3.12/site-packages:$SNAP/usr/lib/python3/dist-packages
+      SDL_VIDEODRIVER: x11
+      SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR: 0
+      PYGAME_HIDE_SUPPORT_PROMPT: 1
+      ELECTRON_DISABLE_SANDBOX: 1
+      ELECTRON_OZONE_PLATFORM_HINT: auto
+      PATH: $SNAP/bin:$PATH
+
+layout:
+  /usr/share/libdrm:
+    bind: $SNAP/usr/share/libdrm
+
+parts:
+  launcher:
+    plugin: dump
+    source: scripts/
+    organize:
+      infinity-arcade-launcher: bin/infinity-arcade-launcher
+      lemonade-server: bin/lemonade-server
+    stage-packages:
+      - curl
+
+  electron-app:
+    plugin: dump
+    source: electron-app/
+    build-packages:
+      - npm
+      - nodejs
+    build-snaps:
+      - node/20/stable
+    override-build: |
+      # Install npm dependencies including electron
+      npm install --prefer-offline --no-audit
+
+      # Create the destination directory
+      mkdir -p $CRAFT_PART_INSTALL/opt/infinity-arcade-electron
+
+      # Copy app files
+      cp main.js preload.js package.json $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/
+
+      # Copy node_modules with electron binary
+      cp -r node_modules $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/
+
+      # Verify electron binary exists
+      ls -la $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/node_modules/electron/dist/ || echo "Electron dist not found"
+    stage-packages:
+      - libgtk-3-0
+      - libnotify4
+      - libnss3
+      - libxss1
+      - libxtst6
+      - xdg-utils
+      - libatspi2.0-0
+      - libuuid1
+      - libsecret-1-0
+
+  infinity-arcade-backend:
+    plugin: python
+    source: https://github.com/lemonade-sdk/infinity-arcade.git
+    source-branch: main
+    python-packages:
+      - pip
+      - wheel
+      - setuptools
+    build-packages:
+      - python3-dev
+      - python3-pip
+      - libsdl2-dev
+      - libsdl2-image-dev
+      - libsdl2-mixer-dev
+      - libsdl2-ttf-dev
+    stage-packages:
+      - libsdl2-2.0-0
+      - libsdl2-image-2.0-0
+      - libsdl2-mixer-2.0-0
+      - libsdl2-ttf-2.0-0
+      - python3-minimal
+      - libpython3.12
+    override-build: |
+      craftctl default
+      # Install the infinity-arcade package
+      pip install . --target $CRAFT_PART_INSTALL/lib/python3.12/site-packages --no-deps
+      # Install Python dependencies
+      pip install fastapi uvicorn pygame httpx jinja2 python-multipart openai \
+        --target $CRAFT_PART_INSTALL/lib/python3.12/site-packages
+
+  desktop-file:
+    plugin: dump
+    source: snap/gui/
+    organize:
+      infinity-arcade.desktop: usr/share/applications/infinity-arcade.desktop
+      infinity-arcade.png: usr/share/icons/hicolor/256x256/apps/infinity-arcade.png

@@ -1,0 +1,30 @@
+{
+  "name": "infinity-arcade",
+  "version": "0.3.0",
+  "description": "AI-powered game generator and arcade using Lemonade Server",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "author": "Lemonade SDK <lemonade@amd.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.amd.infinity-arcade",
+    "productName": "Infinity Arcade",
+    "linux": {
+      "target": ["dir"],
+      "category": "Game"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ]
+  }
+}

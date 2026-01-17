@@ -1,0 +1,90 @@
+#!/bin/bash
+# Infinity Arcade Launcher Script
+# Starts the Python backend server and then launches the Electron frontend
+
+set -e
+
+# Configuration
+BACKEND_PORT=8081
+BACKEND_URL="http://127.0.0.1:${BACKEND_PORT}"
+
+# Paths
+ELECTRON_APP_DIR="${SNAP}/opt/infinity-arcade-electron"
+
+# Find electron binary - it may be in different locations
+if [ -x "${ELECTRON_APP_DIR}/node_modules/electron/dist/electron" ]; then
+    ELECTRON_BIN="${ELECTRON_APP_DIR}/node_modules/electron/dist/electron"
+elif [ -x "${ELECTRON_APP_DIR}/node_modules/.bin/electron" ]; then
+    ELECTRON_BIN="${ELECTRON_APP_DIR}/node_modules/.bin/electron"
+else
+    echo "ERROR: Could not find electron binary"
+    echo "Checking electron-app directory contents:"
+    ls -la "${ELECTRON_APP_DIR}/" 2>/dev/null || echo "Directory not found"
+    echo "Checking node_modules:"
+    ls -la "${ELECTRON_APP_DIR}/node_modules/" 2>/dev/null | head -20 || echo "node_modules not found"
+    echo "Checking electron module:"
+    ls -la "${ELECTRON_APP_DIR}/node_modules/electron/" 2>/dev/null || echo "electron module not found"
+    exit 1
+fi
+
+echo "Using electron binary: ${ELECTRON_BIN}"
+
+# Ensure user data directory exists
+mkdir -p "${HOME}/.infinity-arcade/games"
+
+# Function to cleanup on exit
+cleanup() {
+    echo "Shutting down Infinity Arcade..."
+    if [ -n "$BACKEND_PID" ]; then
+        kill $BACKEND_PID 2>/dev/null || true
+        wait $BACKEND_PID 2>/dev/null || true
+    fi
+    exit 0
+}
+
+# Set up signal handlers
+trap cleanup SIGTERM SIGINT SIGHUP EXIT
+
+# Start the Python backend server using uvicorn directly
+echo "Starting Infinity Arcade backend server..."
+python3 -c "
+import sys
+import uvicorn
+from infinity_arcade.main import app
+
+print('Starting Infinity Arcade server on http://127.0.0.1:${BACKEND_PORT}')
+uvicorn.run(app, host='127.0.0.1', port=${BACKEND_PORT}, log_level='info')
+" &
+BACKEND_PID=$!
+
+# Wait for backend to be ready
+echo "Waiting for backend to start..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s -o /dev/null -w "%{http_code}" "${BACKEND_URL}" 2>/dev/null | grep -q "200"; then
+        echo "Backend is ready!"
+        break
+    fi
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 1
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Warning: Backend may not be fully ready, starting Electron anyway..."
+fi
+
+# Launch Electron frontend
+echo "Starting Infinity Arcade frontend..."
+cd "${ELECTRON_APP_DIR}"
+
+# Set Electron flags for snap environment
+export ELECTRON_DISABLE_SANDBOX=1
+
+# Run Electron (not exec, so cleanup runs when it exits)
+"${ELECTRON_BIN}" "${ELECTRON_APP_DIR}/main.js" --no-sandbox "$@"
+ELECTRON_EXIT_CODE=$?
+
+# Electron has exited, cleanup will run via EXIT trap
+echo "Electron exited with code: ${ELECTRON_EXIT_CODE}"
+exit ${ELECTRON_EXIT_CODE}

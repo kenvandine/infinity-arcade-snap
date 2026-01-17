@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# lemonade-server - Check status of lemonade server
+
+DEFAULT_PORT=8000
+HOST="localhost"
+
+status() {
+    # Try to get status from the server
+    response=$(curl -s --connect-timeout 2 "http://${HOST}:${DEFAULT_PORT}/health" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$response" ]; then
+        echo "Server is running on port ${DEFAULT_PORT}"
+        exit 0
+    else
+        echo "Server is not running"
+        exit 1
+    fi
+}
+
+version() {
+    # Try to get version from the health endpoint
+    response=$(curl -s --connect-timeout 2 "http://${HOST}:${DEFAULT_PORT}/api/v1/health" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$response" ]; then
+        # Extract version from JSON response
+        ver=$(echo "$response" | grep -oP '"version"\s*:\s*"\K[^"]+' 2>/dev/null)
+        if [ -n "$ver" ]; then
+            echo "$ver"
+            exit 0
+        else
+            echo "Version not found in server response"
+            exit 1
+        fi
+    else
+        echo "Server is not running or version unavailable"
+        exit 1
+    fi
+}
+
+case "$1" in
+    status)
+        status
+        ;;
+    --version|-v|version)
+        version
+        ;;
+    *)
+        echo "Usage: lemonade-server {status|--version}"
+        exit 1
+        ;;
+esac
