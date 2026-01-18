@@ -11,14 +11,15 @@ let mainWindow;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
+        fullscreen: true,
         width: 1280,
-        height: 900,
-        minWidth: 800,
-        minHeight: 600,
+        height: 1024,
+        minWidth: 1280,
+        minHeight: 1024,
         title: 'Infinity Arcade',
         icon: process.env.SNAP
-            ? path.join(process.env.SNAP, 'usr', 'share', 'icons', 'hicolor', '256x256', 'apps', 'infinity-arcade.png')
-            : path.join(__dirname, '..', 'snap', 'gui', 'infinity-arcade.png'),
+            ? path.join(process.env.SNAP, 'meta', 'gui', 'icon.png')
+            : path.join(__dirname, '..', 'snap', 'gui', 'icon.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -38,6 +39,32 @@ function createWindow() {
 
     // Wait for backend to be ready, then load
     waitForBackend(0);
+
+    // Inject fullscreen hint overlay after page loads
+    mainWindow.webContents.on('did-finish-load', () => {
+        mainWindow.webContents.insertCSS(`
+            #fullscreen-hint {
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-size: 14px;
+                color: #00ff00;
+                text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+                z-index: 9999;
+                pointer-events: none;
+                opacity: 0.8;
+            }
+        `);
+        mainWindow.webContents.executeJavaScript(`
+            if (!document.getElementById('fullscreen-hint')) {
+                const hint = document.createElement('div');
+                hint.id = 'fullscreen-hint';
+                hint.textContent = 'F11 to toggle fullscreen';
+                document.body.appendChild(hint);
+            }
+        `);
+    });
 
     mainWindow.on('closed', () => {
         mainWindow = null;
