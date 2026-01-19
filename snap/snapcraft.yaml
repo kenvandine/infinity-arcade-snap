@@ -116,10 +116,3 @@ parts:
       # Install Python dependencies
       pip install fastapi uvicorn pygame httpx jinja2 python-multipart openai \
         --target $CRAFT_PART_INSTALL/lib/python3.12/site-packages
-
-  desktop-file:
-    plugin: dump
-    source: snap/gui/
-    organize:
-      infinity-arcade.desktop: usr/share/applications/infinity-arcade.desktop
-      infinity-arcade.png: usr/share/icons/hicolor/256x256/apps/infinity-arcade.png

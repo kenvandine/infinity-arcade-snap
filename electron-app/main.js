@@ -14,8 +14,6 @@ function createWindow() {
         fullscreen: true,
         width: 1280,
         height: 1024,
-        minWidth: 1280,
-        minHeight: 1024,
         title: 'Infinity Arcade',
         icon: process.env.SNAP
             ? path.join(process.env.SNAP, 'meta', 'gui', 'icon.png')
