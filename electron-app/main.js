@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, globalShortcut } = require('electron');
 const path = require('path');
 const http = require('http');
 
@@ -38,10 +38,15 @@ function createWindow() {
     // Wait for backend to be ready, then load
     waitForBackend(0);
 
+    // Register Ctrl+Q to quit the app
+    globalShortcut.register('CommandOrControl+Q', () => {
+        app.quit();
+    });
+
     // Inject fullscreen hint overlay after page loads
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.insertCSS(`
-            #fullscreen-hint {
+            #keyboard-hints {
                 position: fixed;
                 top: 15px;
                 left: 15px;
@@ -52,14 +57,15 @@ function createWindow() {
                 z-index: 9999;
                 pointer-events: none;
                 opacity: 0.8;
+                line-height: 1.6;
             }
         `);
         mainWindow.webContents.executeJavaScript(`
-            if (!document.getElementById('fullscreen-hint')) {
-                const hint = document.createElement('div');
-                hint.id = 'fullscreen-hint';
-                hint.textContent = 'F11 to toggle fullscreen';
-                document.body.appendChild(hint);
+            if (!document.getElementById('keyboard-hints')) {
+                const hints = document.createElement('div');
+                hints.id = 'keyboard-hints';
+                hints.innerHTML = 'F11 to toggle fullscreen<br>Ctrl+Q to exit';
+                document.body.appendChild(hints);
             }
         `);
     });
@@ -130,6 +136,11 @@ if (!gotTheLock) {
 
     app.on('window-all-closed', () => {
         app.quit();
+    });
+
+    app.on('will-quit', () => {
+        // Unregister all shortcuts when quitting
+        globalShortcut.unregisterAll();
     });
 
     app.on('activate', () => {
