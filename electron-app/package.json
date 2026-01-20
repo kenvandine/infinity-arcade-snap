@@ -11,7 +11,7 @@
   "author": "Lemonade SDK <lemonade@amd.com>",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^40.0.0",
     "electron-builder": "^24.9.1"
   },
   "build": {

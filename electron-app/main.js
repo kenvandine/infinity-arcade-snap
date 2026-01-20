@@ -89,6 +89,9 @@ function waitForBackend(retryCount) {
     }
 
     const req = http.get(BACKEND_URL, (res) => {
+        // Consume the response body to prevent connection pool issues in newer Node.js
+        res.resume();
+
         if (res.statusCode === 200) {
             console.log('Backend is ready, loading UI...');
             if (mainWindow) {

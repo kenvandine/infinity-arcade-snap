@@ -81,8 +81,12 @@ cd "${ELECTRON_APP_DIR}"
 # Set Electron flags for snap environment
 export ELECTRON_DISABLE_SANDBOX=1
 
+if [[ ! -n "$DISABLE_WAYLAND" && -n "$WAYLAND_DISPLAY" ]]; then
+  WAYLAND_OPTS="--enable-features=UseOzonePlatform --ozone-platform-hint=auto --enable-wayland-ime"
+fi
+
 # Run Electron (not exec, so cleanup runs when it exits)
-"${ELECTRON_BIN}" "${ELECTRON_APP_DIR}/main.js" --no-sandbox "$@"
+"${ELECTRON_BIN}" "${ELECTRON_APP_DIR}/main.js" --no-sandbox ${WAYLAND_OPTS} "$@"
 ELECTRON_EXIT_CODE=$?
 
 # Electron has exited, cleanup will run via EXIT trap
