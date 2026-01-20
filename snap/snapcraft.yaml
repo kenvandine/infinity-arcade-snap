@@ -20,6 +20,13 @@ compression: lzo
 platforms:
   amd64:
 
+plugs:
+  foo-install-lemonade:
+    interface: content
+    content: foo
+    target: $SNAP_DATA/foo
+    default-provider: lemonade-server
+
 apps:
   infinity-arcade:
     command: bin/infinity-arcade-launcher
