@@ -103,7 +103,6 @@ parts:
   infinity-arcade-backend:
     plugin: python
     source: https://github.com/lemonade-sdk/infinity-arcade.git
-    source-branch: main
     source-tag: v0.3.0
     python-packages:
       - pip

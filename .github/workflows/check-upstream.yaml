@@ -56,9 +56,6 @@ jobs:
           if grep -q '^\s\+source-tag:' snap/snapcraft.yaml; then
             # Update existing source-tag
             sed -i "s/^\(\s\+source-tag:\s*\).*/\1$NEW_TAG/" snap/snapcraft.yaml
-          else
-            # Add source-tag after source-subdir line in lemonade part
-            sed -i "/^\s\+source-branch: src\/app/a\\    source-tag: $NEW_TAG" snap/snapcraft.yaml
           fi
 
           echo "Updated snapcraft.yaml to use tag: $NEW_TAG"
