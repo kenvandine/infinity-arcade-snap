@@ -20,6 +20,12 @@ compression: lzo
 platforms:
   amd64:
 
+license: MIT
+website: https://github.com/lemonade-sdk/infinity-arcade
+source-code: https://github.com/lemonade-sdk/infinity-arcade
+issues: https://github.com/kenvandine/infinity-arcade-snap/issues
+contact: https://github.com/kenvandine/infinity-arcade-snap/issues
+
 plugs:
   foo-install-lemonade:
     interface: content
