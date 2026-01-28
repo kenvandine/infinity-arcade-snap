@@ -103,7 +103,7 @@ parts:
   infinity-arcade-backend:
     plugin: python
     source: https://github.com/lemonade-sdk/infinity-arcade.git
-    source-tag: v0.3.0
+    source-tag: v2.0.1
     python-packages:
       - pip
       - wheel
