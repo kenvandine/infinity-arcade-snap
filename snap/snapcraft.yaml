@@ -1,6 +1,6 @@
 name: infinity-arcade
+adopt-info: infinity-arcade-backend
 base: core24
-version: '0.3.0'
 summary: AI-powered game generator and arcade using Lemonade Server
 description: |
   Infinity Arcade is an AI-powered game generator that combines a ChatGPT-like
@@ -122,6 +122,13 @@ parts:
       - libsdl2-ttf-2.0-0
       - python3-minimal
       - libpython3.12
+    override-pull: |
+      craftctl default
+      VERSION=$(craftctl get version)
+      if [ -z $VERSION ]; then
+        VERSION=$(git describe --tags --abbrev=10)
+        craftctl set version=$VERSION
+      fi
     override-build: |
       craftctl default
       # Install the infinity-arcade package
