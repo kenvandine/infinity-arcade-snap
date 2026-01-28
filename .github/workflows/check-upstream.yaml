@@ -20,9 +20,11 @@ jobs:
         id: upstream
         run: |
           # Fetch tags from upstream repository
+          # Note: v2.0.1 is excluded due to known issues
           LATEST_TAG=$(git ls-remote --tags --sort=-v:refname \
             https://github.com/lemonade-sdk/infinity-arcade.git \
             | grep -oP 'refs/tags/\K[^{}]+$' \
+            | grep -v '^v2\.0\.1$' \
             | head -n 1)
 
           echo "Latest upstream tag: $LATEST_TAG"
