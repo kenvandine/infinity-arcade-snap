@@ -126,6 +126,7 @@ parts:
     plugin: nil
     build-snaps: [ gnome-46-2404 ]
     override-prime: |
-        set -eux
-        cd /snap/gnome-46-2404/current
-        find . -type f,l -exec rm -f $SNAPCRAFT_PRIME/{} \;
+      set -eux
+      rm -f $SNAPCRAFT_PRIME/usr/lib/*/libLLVM*
+      cd /snap/gnome-46-2404/current
+      find . -type f,l -exec rm -f $SNAPCRAFT_PRIME/{} \;
