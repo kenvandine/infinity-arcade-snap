@@ -9,23 +9,8 @@ BACKEND_PORT=8081
 BACKEND_URL="http://127.0.0.1:${BACKEND_PORT}"
 
 # Paths
-ELECTRON_APP_DIR="${SNAP}/opt/infinity-arcade-electron"
-
-# Find electron binary - it may be in different locations
-if [ -x "${ELECTRON_APP_DIR}/node_modules/electron/dist/electron" ]; then
-    ELECTRON_BIN="${ELECTRON_APP_DIR}/node_modules/electron/dist/electron"
-elif [ -x "${ELECTRON_APP_DIR}/node_modules/.bin/electron" ]; then
-    ELECTRON_BIN="${ELECTRON_APP_DIR}/node_modules/.bin/electron"
-else
-    echo "ERROR: Could not find electron binary"
-    echo "Checking electron-app directory contents:"
-    ls -la "${ELECTRON_APP_DIR}/" 2>/dev/null || echo "Directory not found"
-    echo "Checking node_modules:"
-    ls -la "${ELECTRON_APP_DIR}/node_modules/" 2>/dev/null | head -20 || echo "node_modules not found"
-    echo "Checking electron module:"
-    ls -la "${ELECTRON_APP_DIR}/node_modules/electron/" 2>/dev/null || echo "electron module not found"
-    exit 1
-fi
+ELECTRON_APP_DIR="${SNAP}/web-app"
+ELECTRON_BIN="${ELECTRON_APP_DIR}/infinity-arcade"
 
 echo "Using electron binary: ${ELECTRON_BIN}"
 

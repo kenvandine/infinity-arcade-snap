@@ -5,8 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "build": "electron-builder --publish never"
   },
   "author": "Lemonade SDK <lemonade@amd.com>",
   "license": "MIT",
@@ -17,6 +16,7 @@
   "build": {
     "appId": "com.amd.infinity-arcade",
     "productName": "Infinity Arcade",
+    "asar": false,
     "linux": {
       "target": ["dir"],
       "category": "Game"

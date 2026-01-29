@@ -71,34 +71,18 @@ parts:
     source: electron-app/
     build-packages:
       - npm
-      - nodejs
-    build-snaps:
-      - node/20/stable
+      - git
     override-build: |
-      # Install npm dependencies including electron
-      npm install --prefer-offline --no-audit
-
+      npm install
+      npm run build
       # Create the destination directory
-      mkdir -p $CRAFT_PART_INSTALL/opt/infinity-arcade-electron
-
-      # Copy app files
-      cp main.js preload.js package.json $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/
-
-      # Copy node_modules with electron binary
-      cp -r node_modules $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/
-
-      # Verify electron binary exists
-      ls -la $CRAFT_PART_INSTALL/opt/infinity-arcade-electron/node_modules/electron/dist/ || echo "Electron dist not found"
-    stage-packages:
-      - libgtk-3-0
-      - libnotify4
-      - libnss3
-      - libxss1
-      - libxtst6
-      - xdg-utils
-      - libatspi2.0-0
-      - libuuid1
-      - libsecret-1-0
+      mkdir -p $CRAFT_PART_INSTALL/web-app
+      mv dist/linux*-unpacked/* $CRAFT_PART_INSTALL/web-app/
+    prime:
+      - web-app
+      - -*/chrome-sandbox
+      - -*/resources/app.asar.unpacked/node_modules/sharp/vendor/lib
+      - -*/resources/app.asar.unpacked/node_modules/sharp/vendor/include
 
   infinity-arcade-backend:
     plugin: python
@@ -136,3 +120,12 @@ parts:
       # Install Python dependencies
       pip install fastapi uvicorn pygame httpx jinja2 python-multipart openai \
         --target $CRAFT_PART_INSTALL/lib/python3.12/site-packages
+
+  cleanup:
+    after: [ infinity-arcade-backend, electron-app ]
+    plugin: nil
+    build-snaps: [ gnome-46-2404 ]
+    override-prime: |
+        set -eux
+        cd /snap/gnome-46-2404/current
+        find . -type f,l -exec rm -f $SNAPCRAFT_PRIME/{} \;
