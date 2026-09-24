@@ -31,3 +31,24 @@ involved in running tests.
   design — tests run on a registered remote runner.
 - Redundant upstream-polling / sync-release workflows that duplicate automated-ken's
   own version-bump automation should be removed to avoid conflicting/duplicate PRs.
+
+## Upstream release detection
+
+Upstream is `lemonade-sdk/infinity-arcade` on GitHub, tracked via a
+`source-tag:` (not a top-level `version:`) on the `electron-app` part in
+`snap/snapcraft.yaml`.
+
+- Query `https://api.github.com/repos/lemonade-sdk/infinity-arcade/releases/latest`
+  and use its `tag_name` directly (already `v`-prefixed, e.g. `v0.3.0`)
+  as the new `source-tag`.
+- **Do not** sort raw git tags by semver
+  (e.g. `git ls-remote --tags --sort=-v:refname`) to find "the latest" —
+  this upstream repo has a known-bad tag `v2.0.1` that sorts numerically
+  highest but is not a real/intended release. GitHub's `/releases/latest`
+  endpoint reflects the maintainer-marked latest release (currently
+  `v0.3.0`), not raw tag/semver order, and correctly avoids this trap.
+- Compare the fetched tag against the current `source-tag:` value under
+  the `electron-app` part; update it in place if different. The part's
+  `override-pull` step derives the snap's displayed version from
+  `craftctl get version`/`git describe` at build time, so no separate
+  `version:` field needs updating.
