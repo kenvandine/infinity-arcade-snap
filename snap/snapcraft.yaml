@@ -11,7 +11,8 @@ description: |
   - Generate unique games by describing what you want to play
   - Play classic-style arcade games rendered with Pygame
   - Built-in demo games to get started
-  - Powered by AMD's Lemonade Server for local AI inference
+  - Ships with an embedded Lemonade Server for local AI inference — fully
+    self-contained, no separate lemonade-server install required
 
 grade: stable
 confinement: strict
@@ -25,13 +26,6 @@ website: https://github.com/lemonade-sdk/infinity-arcade
 source-code: https://github.com/lemonade-sdk/infinity-arcade
 issues: https://github.com/kenvandine/infinity-arcade-snap/issues
 contact: https://github.com/kenvandine/infinity-arcade-snap/issues
-
-plugs:
-  foo-install-lemonade:
-    interface: content
-    content: foo
-    target: $SNAP_DATA/foo
-    default-provider: lemonade-server
 
 apps:
   infinity-arcade:
@@ -65,6 +59,32 @@ parts:
       lemonade-server: bin/lemonade-server
     stage-packages:
       - curl
+
+  lemonade-server:
+    plugin: nil
+    # Embedded, self-contained Lemonade Server build (the "lemonade-embeddable"
+    # release asset). No separate lemonade-server snap/package is required at
+    # runtime. See AGENTS.md for how the pinned version below is tracked.
+    source: https://github.com/lemonade-sdk/lemonade/releases/download/v2026.39.1/lemonade-embeddable-2026.39.1-ubuntu-x64.tar.gz
+    source-type: tar
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/lemonade
+      cp -a LICENSE lemond lemonade resources $CRAFT_PART_INSTALL/lemonade/
+      # lemond downloads llama.cpp backend archives (.tar.xz) at runtime and
+      # extracts them by shelling out to "tar" on PATH. The base snap's GNU
+      # tar isn't linked against liblzma and there's no standalone "xz"
+      # binary in strict confinement for it to shell out to, so extraction
+      # fails ("Could not list tarball contents"). bsdtar (from
+      # libarchive-tools) links directly against libarchive/liblzma with no
+      # external decompressor needed, so symlink it in as "tar" on $SNAP/bin,
+      # which is first on PATH (see apps.infinity-arcade.environment.PATH),
+      # ahead of the base snap's real tar.
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      ln -sf ../usr/bin/bsdtar $CRAFT_PART_INSTALL/bin/tar
+    stage-packages:
+      - libssl3t64
+      - libarchive-tools
 
   electron-app:
     plugin: dump
@@ -114,6 +134,18 @@ parts:
         craftctl set version=$VERSION
       fi
     override-build: |
+      # The pip installs below are unpinned, so they can pick up a Starlette
+      # release that dropped the legacy TemplateResponse(name, context) call
+      # signature in favor of TemplateResponse(request, name, context). The
+      # pinned v0.3.0 app source still uses the old form at its one call
+      # site; adapt it so the app works regardless of which Starlette gets
+      # installed. Fails loudly (rather than silently regressing) if
+      # upstream ever reformats this line. See AGENTS.md.
+      PATCH_TARGET="src/infinity_arcade/main.py"
+      sed -i \
+        's/self\.templates\.TemplateResponse("index\.html", {"request": request})/self.templates.TemplateResponse(request, "index.html", {})/' \
+        "$PATCH_TARGET"
+      grep -q 'self.templates.TemplateResponse(request, "index.html", {})' "$PATCH_TARGET"
       craftctl default
       # Install the infinity-arcade package
       pip install . --target $CRAFT_PART_INSTALL/lib/python3.12/site-packages --no-deps

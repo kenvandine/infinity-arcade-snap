@@ -1,16 +1,31 @@
 #!/bin/bash
+#
+# lemonade-server - wrapper around the embedded Lemonade Server daemon.
+#
+# infinity-arcade's LemonadeClient shells out to a "lemonade-server" command
+# on PATH for three things: "--version", "status", and "serve --ctx-size N".
+# It then talks to the running server directly over HTTP at
+# http://localhost:8000. This wrapper drives the lemond/lemonade binaries
+# bundled in this snap (see the "lemonade-server" part in snapcraft.yaml) so
+# the whole stack is self-contained, with no separate lemonade-server
+# install/snap required on the host.
 
-# lemonade-server - Check status of lemonade server
+set -u
 
-DEFAULT_PORT=8000
+PORT="${LEMONADE_PORT:-8000}"
 HOST="localhost"
 
-status() {
-    # Try to get status from the server
-    response=$(curl -s --connect-timeout 2 "http://${HOST}:${DEFAULT_PORT}/health" 2>/dev/null)
+LEMONADE_DIR="${SNAP}/lemonade"
+LEMOND_BIN="${LEMONADE_DIR}/lemond"
 
-    if [ $? -eq 0 ] && [ -n "$response" ]; then
-        echo "Server is running on port ${DEFAULT_PORT}"
+CACHE_DIR="${SNAP_USER_COMMON}/lemonade/cache"
+CONFIG_DIR="${SNAP_USER_COMMON}/lemonade/config"
+
+status() {
+    response=$(curl -s --connect-timeout 2 "http://${HOST}:${PORT}/api/v1/health" 2>/dev/null)
+
+    if [ -n "$response" ] && echo "$response" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+        echo "Server is running on port ${PORT}"
         exit 0
     else
         echo "Server is not running"
@@ -19,34 +34,44 @@ status() {
 }
 
 version() {
-    # Try to get version from the health endpoint
-    response=$(curl -s --connect-timeout 2 "http://${HOST}:${DEFAULT_PORT}/api/v1/health" 2>/dev/null)
+    # Prefer the running server's version; fall back to the bundled binary's
+    # own version when the server isn't up yet.
+    response=$(curl -s --connect-timeout 2 "http://${HOST}:${PORT}/api/v1/health" 2>/dev/null)
+    ver=$(echo "$response" | grep -oP '"version"\s*:\s*"\K[^"]+' 2>/dev/null)
 
-    if [ $? -eq 0 ] && [ -n "$response" ]; then
-        # Extract version from JSON response
-        ver=$(echo "$response" | grep -oP '"version"\s*:\s*"\K[^"]+' 2>/dev/null)
-        if [ -n "$ver" ]; then
-            echo "$ver"
-            exit 0
-        else
-            echo "Version not found in server response"
-            exit 1
-        fi
+    if [ -z "$ver" ]; then
+        ver=$("${LEMOND_BIN}" --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
+    fi
+
+    if [ -n "$ver" ]; then
+        echo "$ver"
+        exit 0
     else
-        echo "Server is not running or version unavailable"
+        echo "Version not found"
         exit 1
     fi
 }
 
-case "$1" in
+serve() {
+    mkdir -p "${CACHE_DIR}" "${CONFIG_DIR}"
+    # Replace this process with lemond so its PID matches the one
+    # infinity-arcade tracks (it terminates the server by PID).
+    exec "${LEMOND_BIN}" --host "${HOST}" --port "${PORT}" --no-broadcast \
+        "${CACHE_DIR}" "${CONFIG_DIR}"
+}
+
+case "${1:-}" in
     status)
         status
         ;;
     --version|-v|version)
         version
         ;;
+    serve)
+        serve
+        ;;
     *)
-        echo "Usage: lemonade-server {status|--version}"
+        echo "Usage: lemonade-server {status|--version|serve}"
         exit 1
         ;;
 esac
