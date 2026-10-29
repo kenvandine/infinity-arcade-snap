@@ -65,7 +65,7 @@ parts:
     # Embedded, self-contained Lemonade Server build (the "lemonade-embeddable"
     # release asset). No separate lemonade-server snap/package is required at
     # runtime. See AGENTS.md for how the pinned version below is tracked.
-    source: https://github.com/lemonade-sdk/lemonade/releases/download/v2026.43.3/lemonade-embeddable-2026.43.3-ubuntu-x64.tar.gz
+    source: https://github.com/lemonade-sdk/lemonade/releases/download/v2026.44.1/lemonade-embeddable-2026.44.1-ubuntu-x64.tar.gz
     source-type: tar
     override-build: |
       craftctl default
